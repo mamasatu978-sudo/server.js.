@@ -1,0 +1,79 @@
+
+const express = require("express");
+const app = express();
+
+app.use(express.json());
+
+const sessions = new Map();
+
+// Halaman utama
+app.get("/", (req, res) => {
+  res.send("CloudAFK API aktif!");
+});
+
+// Cek server
+app.get("/health", (req, res) => {
+  res.json({
+    status: "online",
+    message: "CloudAFK berjalan"
+  });
+});
+
+// Membuat sesi AFK
+app.post("/sessions", (req, res) => {
+  const { game, duration } = req.body;
+
+  if (!game || !duration || duration <= 0) {
+    return res.status(400).json({
+      error: "Game dan durasi harus diisi"
+    });
+  }
+
+  const id = Date.now().toString();
+
+  const session = {
+    id,
+    game,
+    duration,
+    status: "queued"
+  };
+
+  sessions.set(id, session);
+
+  res.json(session);
+});
+
+// Mengecek sesi
+app.get("/sessions/:id", (req, res) => {
+  const session = sessions.get(req.params.id);
+
+  if (!session) {
+    return res.status(404).json({
+      error: "Sesi tidak ditemukan"
+    });
+  }
+
+  res.json(session);
+});
+
+// Menghentikan sesi
+app.delete("/sessions/:id", (req, res) => {
+  const session = sessions.get(req.params.id);
+
+  if (!session) {
+    return res.status(404).json({
+      error: "Sesi tidak ditemukan"
+    });
+  }
+
+  session.status = "stopped";
+
+  res.json(session);
+});
+
+// Port untuk Render
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("CloudAFK berjalan di port " + PORT);
+});
